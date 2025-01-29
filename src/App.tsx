@@ -1,8 +1,9 @@
+import Calendar from "./components/Calendar"
 
 function App() {
    return (
-    <div>
-      hello
+    <div className="h-screen">
+      <Calendar />
     </div>
   )
 }
