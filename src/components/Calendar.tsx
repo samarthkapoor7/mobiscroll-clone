@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Event, Resource } from "../types";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { getRandomColor } from "../utils";
+import { generateDatesForMonth, getRandomColor } from "../utils";
 
 
 interface CalendarProps {
@@ -22,6 +22,11 @@ const Calendar: React.FC<CalendarProps> = ({
     onResourceAdd,
 }) => {
     const [currentDate, setCurrentDate] = useState(new Date());
+    const [isDragging, setIsDragging] = useState(false);
+    const [dragStartX, setDragStartX] = useState(0);
+    const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+
+    const dates = generateDatesForMonth(currentDate);
 
     const handlePrevMonth = () => {
         setCurrentDate(new Date(currentDate.setMonth(currentDate.getMonth() - 1)));
@@ -45,6 +50,46 @@ const Calendar: React.FC<CalendarProps> = ({
             color: getRandomColor(),
         };
         onEventAdd(newEvent);
+    };
+
+    const handleDragStart = (event: React.MouseEvent, calendarEvent: Event) => {
+        event.stopPropagation();
+        setIsDragging(true);
+        setDragStartX(event.clientX);
+        setSelectedEvent(calendarEvent);
+    };
+
+    const handleDragEnd = () => {
+        setIsDragging(false);
+        setSelectedEvent(null);
+    };
+
+    const handleEventDelete = (event: React.MouseEvent, eventId: string) => {
+        event.stopPropagation();
+        if (window.confirm('Are you sure you want to delete this event?')) {
+            onEventDelete(eventId);
+        }
+    };
+
+    const handleAddResource = () => {
+        const name = prompt("Enter resource name:");
+        if (name) {
+            onResourceAdd({
+                id: Math.random().toString(36).substring(2, 9),
+                name,
+            });
+        }
+    };
+
+    const formatDateHeader = (date: Date) => {
+        const day = date.getDate();
+        const weekday = date.toLocaleDateString('en-US', { weekday: 'short' });
+        return (
+            <div className="flex flex-col items-center">
+                <span className="text-xs text-gray-600">{weekday}</span>
+                <span className="font-medium">{day}</span>
+            </div>
+        );
     };
 
     return (
@@ -107,15 +152,44 @@ const Calendar: React.FC<CalendarProps> = ({
                                 </div>
                             ))}
 
+                            {resources.map((resource) => (
+                                <React.Fragment key={resource.id}>
+                                    {dates.map((date) => (
+                                        <div
+                                          key={`${resource.id}-${date.toISOString()}`}
+                                          className="h-20 border-b border-r relative"
+                                          onClick={(e) => handleCellClick(date, resource.id, e)}
+                                        >
+                                            {events
+                                              .filter(
+                                                (event) => 
+                                                    event.resourceId === resource.id && 
+                                                    event.startDate.toDateString() === 
+                                                     date.toDateString()
+                                              )
+                                              .map((event) => (
+                                                <div
+                                                  key={event.id}
+                                                  className="event-item absolute top-1 left-1 right-1 p-1 rounded text-sm cursor-move"
+                                                  style={{ backgroundColor: event.color }}
+                                                  onMouseDown={(e) => handleDragStart(e, event)}
+                                                  onMouseUp={handleDragEnd}
+                                                  onDoubleClick={(e) => handleEventDelete(e, event.id)}
+                                                >
+                                                    {event.title}
+                                                </div>
+                                              ))}
+                                        </div>
+                                    ))}
+                                </React.Fragment>
+                            ))}
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-    )
-}
-
-
+    );
+};
 
 
 export default Calendar;
