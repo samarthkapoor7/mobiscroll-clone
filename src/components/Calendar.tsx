@@ -17,7 +17,6 @@ const Calendar: React.FC<CalendarProps> = ({
     events,
     resources,
     onEventAdd,
-    onEventUpdate,
     onEventDelete,
     onResourceAdd,
 }) => {
